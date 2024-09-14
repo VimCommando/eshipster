@@ -16,14 +16,14 @@ impl FileReceiver {
 }
 
 impl Receive for FileReceiver {
-    fn is_connected(&self) -> bool {
+    async fn is_connected(&self) -> bool {
         let is_file = self.path.is_file();
         let filename = self.path.to_str().unwrap_or("");
         log::debug!("File {filename} is valid: {is_file}");
         is_file
     }
 
-    fn read_indices_stats(&self) -> Result<IndicesStats> {
+    async fn read_indices_stats(&self) -> Result<IndicesStats> {
         log::debug!("Reading file: {}", self.path.display());
         let indices_stats: IndicesStats = serde_json::from_reader(&self.file)?;
         Ok(indices_stats)

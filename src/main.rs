@@ -60,7 +60,8 @@ enum Commands {
     },
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // Initialize logger
     let env = env_logger::Env::default().filter_or("LOG_LEVEL", env::LOG_LEVEL);
     env_logger::Builder::from_env(env)
@@ -83,7 +84,9 @@ fn main() {
         Commands::Eval { input, output } => {
             let reciever = Receiver::parse(input).expect("Failed to parse input");
             let exporter = Exporter::parse(output.as_ref()).expect("Failed to parse output");
-            let docs = evaluate_shard_balance(&reciever).expect("Failed to evaluate shard balance");
+            let docs = evaluate_shard_balance(&reciever)
+                .await
+                .expect("Failed to evaluate shard balance");
             log::info!("Writing docs to {exporter}");
             exporter.write(docs).expect("Failed to write docs");
         }
@@ -102,9 +105,9 @@ fn main() {
     }
 }
 
-fn evaluate_shard_balance(reciever: &Receiver) -> Result<Vec<ShardDoc>> {
+async fn evaluate_shard_balance(reciever: &Receiver) -> Result<Vec<ShardDoc>> {
     log::info!("Evaluating shard balance of {reciever}");
-    let indices_stats = reciever.read_indices_stats()?;
+    let indices_stats = reciever.read_indices_stats().await?;
     log::warn!("TODO: perform calculations");
     let shard_docs = extract_shard_docs(indices_stats)?;
     Ok(shard_docs)
