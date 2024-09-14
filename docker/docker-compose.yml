@@ -1,0 +1,47 @@
+# A minimal, security-disabled Elasticsearch and Kibana configuration
+# Only use this for development on a local machine!
+#
+# Ensure you've allocated Docker at least 8 GB of memory to allow
+# more than one Elasticsearch node to run
+
+name: eshipster
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
+    container_name: es-node1
+    environment:
+      - node.name=node1
+      - cluster.name=elasticsearch
+      - cluster.initial_master_nodes=node1
+      - xpack.security.enabled=false
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - net
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.14.1
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    networks:
+      - net
+    ports:
+      - 5601:5601
+
+volumes:
+  data:
+    driver: local
+
+networks:
+  net:
+    driver: bridge
