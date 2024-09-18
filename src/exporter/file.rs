@@ -14,20 +14,24 @@ pub struct FileExporter {
 
 impl FileExporter {
     pub fn new(path: PathBuf) -> Result<Self> {
-        let file = OpenOptions::new().write(true).create(true).open(&path)?;
+        let file = OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open(&path)?;
         Ok(Self { file, path })
     }
 }
 
 impl Export for FileExporter {
-    fn is_connected(&self) -> bool {
+    async fn is_connected(&self) -> bool {
         let is_file = self.path.is_file();
         let filename = self.path.to_str().unwrap_or("");
         log::debug!("File {filename} is valid: {is_file}");
         is_file
     }
 
-    fn write(&self, docs: Vec<ShardDoc>) -> Result<()> {
+    async fn write(&self, docs: Vec<ShardDoc>) -> Result<()> {
         log::info!(
             "Writing {} docs to file {}",
             docs.len(),

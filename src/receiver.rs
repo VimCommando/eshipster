@@ -20,21 +20,24 @@ pub enum Receiver {
 
 impl Receiver {
     pub fn parse(input: &str) -> Result<Self> {
+        // Attempt to parse the input as a URL
         match Url::parse(input) {
             Ok(url) => {
-                let es_receiver = ElasticsearchReceiver::new(url);
-                return Ok(Self::Elasticsearch(es_receiver));
+                let receiver = ElasticsearchReceiver::new(url)?;
+                return Ok(Self::Elasticsearch(receiver));
             }
-            Err(_) => log::debug!("Input did not parse as a URL"),
+            Err(_) => log::debug!("Input was not a valid URL"),
         };
 
+        // Fallback to a file path
         let path = Path::new(&input);
-        if path.is_file() {
-            let file_receiver = FileReceiver::new(path.to_path_buf())?;
-            return Ok(Self::File(file_receiver));
+        match path.is_file() {
+            true => {
+                let file_receiver = FileReceiver::new(path.to_path_buf())?;
+                return Ok(Self::File(file_receiver));
+            }
+            false => Err(eyre!("Could not parse input")),
         }
-
-        Err(eyre!("Could not parse input"))
     }
 
     pub async fn read_indices_stats(&self) -> Result<IndicesStats> {

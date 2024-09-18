@@ -1,3 +1,4 @@
+mod client;
 mod data;
 mod env;
 mod exporter;
@@ -88,7 +89,7 @@ async fn main() {
                 .await
                 .expect("Failed to evaluate shard balance");
             log::info!("Writing docs to {exporter}");
-            exporter.write(docs).expect("Failed to write docs");
+            exporter.write(docs).await.expect("Failed to write docs");
         }
         Commands::Setup { host } => {
             log::info!("Setting up eshipster datastreams on {host}");

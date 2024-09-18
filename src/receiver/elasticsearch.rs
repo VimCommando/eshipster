@@ -1,16 +1,8 @@
 use super::Receive;
+use crate::client::ElasticsearchBuilder;
 use crate::data::IndicesStats;
 use color_eyre::eyre::Result;
-use elasticsearch::{
-    cert::CertificateValidation,
-    http::{
-        self,
-        transport::{SingleNodeConnectionPool, TransportBuilder},
-    },
-    indices::IndicesStatsParts,
-    params::Level,
-    Elasticsearch,
-};
+use elasticsearch::{http, indices::IndicesStatsParts, params::Level, Elasticsearch};
 use url::Url;
 
 pub struct ElasticsearchReceiver {
@@ -19,24 +11,13 @@ pub struct ElasticsearchReceiver {
 }
 
 impl ElasticsearchReceiver {
-    pub fn new(url: Url) -> Self {
-        let client =
-            new_insecure_client(url.clone()).expect("Failed to create Elasticsearch client");
+    pub fn new(url: Url) -> Result<Self> {
+        let client = ElasticsearchBuilder::new(url.clone())
+            .insecure(true)
+            .build()?;
 
-        Self { client, url }
+        Ok(Self { client, url })
     }
-}
-
-fn new_insecure_client(url: Url) -> Result<Elasticsearch> {
-    let connection_pool = SingleNodeConnectionPool::new(url);
-    let cert_validation = CertificateValidation::None;
-
-    let transport = TransportBuilder::new(connection_pool)
-        .header(http::headers::ACCEPT_ENCODING, "gzip".parse().unwrap())
-        .cert_validation(cert_validation)
-        .build()?;
-
-    Ok(Elasticsearch::new(transport))
 }
 
 impl Receive for ElasticsearchReceiver {
