@@ -2,6 +2,7 @@ mod elasticsearch;
 mod file;
 mod stream;
 
+use crate::client::{Auth, AuthType};
 use crate::data::ShardDoc;
 use color_eyre::eyre::Result;
 use elasticsearch::ElasticsearchExporter;
@@ -22,7 +23,16 @@ pub enum Exporter {
 }
 
 impl Exporter {
-    pub fn parse(output: Option<&String>) -> Result<Self> {
+    pub async fn is_connected(&self) -> bool {
+        match self {
+            Self::Elasticsearch(exporter) => exporter.is_connected().await,
+            Self::File(exporter) => exporter.is_connected().await,
+            Self::Stream(exporter) => exporter.is_connected().await,
+        }
+    }
+
+    pub fn parse(output: Option<&String>, auth_type: &AuthType) -> Result<Self> {
+        log::debug!("Parsing exporter: {:?}", output);
         // No output given, write to stdout
         let output = match output {
             None => {
@@ -34,7 +44,13 @@ impl Exporter {
         // Attempt to parse the output as a URL
         match Url::parse(output) {
             Ok(url) => {
-                let exporter = ElasticsearchExporter::new(url)?;
+                let auth = Auth::new(
+                    auth_type,
+                    std::env::var("ESHIPSTER_XP_USERNAME").ok(),
+                    std::env::var("ESHIPSTER_XP_PASSWORD").ok(),
+                    std::env::var("ESHIPSTER_XP_APIKEY").ok(),
+                );
+                let exporter = ElasticsearchExporter::new(url, auth)?;
                 return Ok(Self::Elasticsearch(exporter));
             }
             Err(_) => log::debug!("Output was not a valid URL"),

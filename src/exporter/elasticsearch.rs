@@ -1,5 +1,5 @@
 use super::Export;
-use crate::client::ElasticsearchBuilder;
+use crate::client::{Auth, ElasticsearchBuilder};
 use crate::data::ShardDoc;
 use color_eyre::eyre::Result;
 use elasticsearch::{BulkOperation, BulkParts, Elasticsearch};
@@ -11,9 +11,10 @@ pub struct ElasticsearchExporter {
 }
 
 impl ElasticsearchExporter {
-    pub fn new(url: Url) -> Result<Self> {
+    pub fn new(url: Url, auth: Auth) -> Result<Self> {
         let client = ElasticsearchBuilder::new(url.clone())
             .insecure(true)
+            .auth(auth)
             .build()?;
 
         Ok(Self { client, url })
@@ -38,7 +39,29 @@ impl Export for ElasticsearchExporter {
     }
 
     async fn is_connected(&self) -> bool {
-        true
+        let status_code = match self
+            .client
+            .send(
+                elasticsearch::http::Method::Get,
+                "",
+                elasticsearch::http::headers::HeaderMap::new(),
+                Option::<&String>::None,
+                Option::<&String>::None,
+                None,
+            )
+            .await
+        {
+            Ok(res) => {
+                log::debug!("{:?}", res);
+                res.status_code().as_str().to_string()
+            }
+            Err(e) => {
+                log::error!("{e}");
+                "599".to_string()
+            }
+        };
+
+        status_code == "200"
     }
 }
 
