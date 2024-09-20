@@ -3,6 +3,7 @@ mod file;
 mod stream;
 
 use crate::client::{Auth, AuthType};
+use crate::config;
 use crate::data::ShardDoc;
 use color_eyre::eyre::Result;
 use elasticsearch::ElasticsearchExporter;
@@ -46,9 +47,9 @@ impl Exporter {
             Ok(url) => {
                 let auth = Auth::new(
                     auth_type,
-                    std::env::var("ESHIPSTER_XP_USERNAME").ok(),
-                    std::env::var("ESHIPSTER_XP_PASSWORD").ok(),
-                    std::env::var("ESHIPSTER_XP_APIKEY").ok(),
+                    config::ESHIPSTER_XP_USERNAME.clone(),
+                    config::ESHIPSTER_XP_PASSWORD.clone(),
+                    config::ESHIPSTER_XP_APIKEY.clone(),
                 );
                 let exporter = ElasticsearchExporter::new(url, auth)?;
                 return Ok(Self::Elasticsearch(exporter));

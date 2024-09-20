@@ -2,6 +2,7 @@ mod elasticsearch;
 mod file;
 
 use crate::client::{Auth, AuthType};
+use crate::config;
 use crate::data::IndicesStats;
 use color_eyre::eyre::{eyre, Result};
 use elasticsearch::ElasticsearchReceiver;
@@ -27,9 +28,9 @@ impl Receiver {
             Ok(url) => {
                 let auth = Auth::new(
                     auth_type,
-                    None,
-                    None,
-                    std::env::var("ESHIPSTER_RC_APIKEY").ok(),
+                    config::ESHIPSTER_RC_USERNAME.clone(),
+                    config::ESHIPSTER_RC_PASSWORD.clone(),
+                    config::ESHIPSTER_RC_APIKEY.clone(),
                 );
                 let receiver = ElasticsearchReceiver::new(url, auth)?;
                 return Ok(Self::Elasticsearch(receiver));

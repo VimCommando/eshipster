@@ -1,6 +1,6 @@
 mod client;
+mod config;
 mod data;
-mod env;
 mod exporter;
 mod processor;
 mod receiver;
@@ -9,7 +9,6 @@ use clap::{Parser, Subcommand};
 use client::AuthType;
 use color_eyre::eyre::Result;
 use data::ShardDoc;
-use dotenvy::dotenv;
 use exporter::Exporter;
 use processor::extract_shard_docs;
 use receiver::Receiver;
@@ -81,11 +80,10 @@ enum Commands {
 
 #[tokio::main]
 async fn main() {
-    // Load environment variables from .env file
-    dotenv().ok();
+    config::load();
 
     // Initialize logger
-    let env = env_logger::Env::default().filter_or("LOG_LEVEL", env::LOG_LEVEL);
+    let env = env_logger::Env::default().filter_or("LOG_LEVEL", config::LOG_LEVEL);
     env_logger::Builder::from_env(env)
         .format_timestamp_millis()
         .init();

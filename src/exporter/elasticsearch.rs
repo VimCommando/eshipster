@@ -52,7 +52,7 @@ impl Export for ElasticsearchExporter {
             .await
         {
             Ok(res) => {
-                log::debug!("{:?}", res);
+                log::trace!("{:?}", res);
                 res.status_code().as_str().to_string()
             }
             Err(e) => {
