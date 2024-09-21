@@ -82,42 +82,37 @@ impl FromStr for Host {
 }
 
 /// Get the path for the hosts.yml file, fallback to ~/.eshipster/hosts.yml
-fn get_hosts_path() -> PathBuf {
+fn get_hosts_path() -> Result<PathBuf> {
     match env::var("ESHIPSTER_HOSTS") {
-        Ok(path) => PathBuf::from(path),
+        Ok(path) => Ok(PathBuf::from(path)),
         Err(_) => {
-            let home = match env::var("HOME") {
-                Ok(home) => PathBuf::from(home),
-                Err(_) => panic!("ERROR: No home directory found"),
-            };
+            let home = env::var("HOME").map(|home| PathBuf::from(home))?;
             // Check if the `.eshipster` directory exists, if not, create it
             let eshipster_dir = home.join(".eshipster");
             if !eshipster_dir.exists() {
-                create_dir(&eshipster_dir).expect("Failed to create ~/.eshipster directory");
+                create_dir(&eshipster_dir)?
             }
             let path = home.join(".eshipster").join("hosts.yml");
-            path
+            Ok(path)
         }
     }
 }
 
-/// Loads hosts from a yml file
+/// Tries to load hosts from a yml file, creates an empty file if it doesn't exist
 fn parse_hosts_yml() -> Result<BTreeMap<String, Host>> {
-    let path = get_hosts_path();
+    let path = get_hosts_path()?;
     log::debug!("Parsing {:?}", path);
-    let hosts = match path.is_file() {
+    match path.is_file() {
         true => {
             let file = File::open(path)?;
             let reader = BufReader::new(file);
-            let hosts: Result<BTreeMap<String, Host>, serde_yaml::Error> =
-                serde_yaml::from_reader(reader);
-            hosts
+            let hosts: BTreeMap<String, Host> = serde_yaml::from_reader(reader)?;
+            Ok(hosts)
         }
         false => {
             log::info!("No hosts, file creating {:?}", path);
             File::create(path)?;
             Ok(BTreeMap::new())
         }
-    };
-    Ok(hosts?)
+    }
 }
