@@ -1,7 +1,7 @@
 use super::Receive;
 use crate::data::IndicesStats;
 use color_eyre::eyre::Result;
-use std::{fs::File, path::PathBuf};
+use std::{fs::File, io::BufReader, path::PathBuf};
 
 pub struct FileReceiver {
     path: PathBuf,
@@ -25,7 +25,8 @@ impl Receive for FileReceiver {
 
     async fn read_indices_stats(&self) -> Result<IndicesStats> {
         log::debug!("Reading file: {}", self.path.display());
-        let indices_stats: IndicesStats = serde_json::from_reader(&self.file)?;
+        let reader = BufReader::new(&self.file);
+        let indices_stats: IndicesStats = serde_json::from_reader(reader)?;
         Ok(indices_stats)
     }
 }
