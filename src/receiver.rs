@@ -1,6 +1,7 @@
 mod elasticsearch;
 mod file;
 
+use crate::client::{Auth, AuthType};
 use crate::data::IndicesStats;
 use color_eyre::eyre::{eyre, Result};
 use elasticsearch::ElasticsearchReceiver;
@@ -19,11 +20,18 @@ pub enum Receiver {
 }
 
 impl Receiver {
-    pub fn parse(input: &str) -> Result<Self> {
+    pub fn parse(input: &str, auth_type: &AuthType) -> Result<Self> {
+        log::debug!("Parsing receiver: {}", input);
         // Attempt to parse the input as a URL
         match Url::parse(input) {
             Ok(url) => {
-                let receiver = ElasticsearchReceiver::new(url)?;
+                let auth = Auth::new(
+                    auth_type,
+                    None,
+                    None,
+                    std::env::var("ESHIPSTER_RC_APIKEY").ok(),
+                );
+                let receiver = ElasticsearchReceiver::new(url, auth)?;
                 return Ok(Self::Elasticsearch(receiver));
             }
             Err(_) => log::debug!("Input was not a valid URL"),

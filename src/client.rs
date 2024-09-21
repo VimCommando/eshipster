@@ -1,3 +1,3 @@
 mod elasticsearch;
 
-pub use elasticsearch::ElasticsearchBuilder;
+pub use elasticsearch::{Auth, AuthType, ElasticsearchBuilder};

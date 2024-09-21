@@ -6,8 +6,10 @@ mod processor;
 mod receiver;
 
 use clap::{Parser, Subcommand};
+use client::AuthType;
 use color_eyre::eyre::Result;
 use data::ShardDoc;
+use dotenvy::dotenv;
 use exporter::Exporter;
 use processor::extract_shard_docs;
 use receiver::Receiver;
@@ -43,6 +45,22 @@ enum Commands {
         /// The output to send the shard documents to
         #[arg(help = "The output to send the shard documents to")]
         output: Option<String>,
+        /// Authentication method to use (none, basic, apikey, etc.)
+        #[arg(
+            default_value = "none",
+            help = "Authentication method",
+            long,
+            value_enum
+        )]
+        input_auth: AuthType,
+        /// Authentication method to use (none, basic, apikey, etc.)
+        #[arg(
+            default_value = "none",
+            help = "Authentication method",
+            long,
+            value_enum
+        )]
+        output_auth: AuthType,
     },
     /// Setup Elasticsearch assets for visualizing output data
     Setup {
@@ -63,6 +81,9 @@ enum Commands {
 
 #[tokio::main]
 async fn main() {
+    // Load environment variables from .env file
+    dotenv().ok();
+
     // Initialize logger
     let env = env_logger::Env::default().filter_or("LOG_LEVEL", env::LOG_LEVEL);
     env_logger::Builder::from_env(env)
@@ -82,12 +103,23 @@ async fn main() {
             let _output = output.as_ref().unwrap_or(host);
             todo!("balance shards on a cluster.");
         }
-        Commands::Eval { input, output } => {
-            let reciever = Receiver::parse(input).expect("Failed to parse input");
-            let exporter = Exporter::parse(output.as_ref()).expect("Failed to parse output");
+        Commands::Eval {
+            input,
+            input_auth,
+            output,
+            output_auth,
+        } => {
+            let reciever = Receiver::parse(input, input_auth).expect("Failed to parse input");
+            let exporter =
+                Exporter::parse(output.as_ref(), output_auth).expect("Failed to parse output");
             let docs = evaluate_shard_balance(&reciever)
                 .await
                 .expect("Failed to evaluate shard balance");
+
+            match exporter.is_connected().await {
+                true => log::info!("Connected to {exporter}"),
+                false => log::warn!("Failed to connect to {exporter}"),
+            };
             log::info!("Writing docs to {exporter}");
             exporter.write(docs).await.expect("Failed to write docs");
         }
