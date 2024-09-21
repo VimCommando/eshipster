@@ -31,17 +31,15 @@ impl Export for FileExporter {
         is_file
     }
 
-    async fn write(&self, docs: Vec<ShardDoc>) -> Result<()> {
-        log::info!(
-            "Writing {} docs to file {}",
-            docs.len(),
-            &self.path.display()
-        );
+    async fn write(&self, docs: Vec<ShardDoc>) -> Result<usize> {
+        log::debug!("Writing docs to file {}", &self.path.display());
+        let mut doc_count = 0;
         for doc in docs {
             serde_json::to_writer(&self.file, &doc)?;
             writeln!(&self.file)?;
+            doc_count += 1;
         }
-        Ok(())
+        Ok(doc_count)
     }
 }
 

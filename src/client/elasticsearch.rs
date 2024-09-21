@@ -1,3 +1,5 @@
+pub mod index_template;
+
 use super::auth::Auth;
 use super::host::Host;
 use base64::{engine::general_purpose::STANDARD, Engine};

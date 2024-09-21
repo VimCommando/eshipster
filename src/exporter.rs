@@ -13,7 +13,7 @@ use stream::StreamExporter;
 use url::Url;
 
 trait Export {
-    async fn write(&self, docs: Vec<ShardDoc>) -> Result<()>;
+    async fn write(&self, docs: Vec<ShardDoc>) -> Result<usize>;
     async fn is_connected(&self) -> bool;
 }
 
@@ -70,7 +70,7 @@ impl Exporter {
         Ok(Self::File(exporter))
     }
 
-    pub async fn write(&self, docs: Vec<ShardDoc>) -> Result<()> {
+    pub async fn write(&self, docs: Vec<ShardDoc>) -> Result<usize> {
         match self {
             Self::Elasticsearch(exporter) => exporter.write(docs).await,
             Self::File(exporter) => exporter.write(docs).await,

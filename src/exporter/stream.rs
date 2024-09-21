@@ -11,13 +11,14 @@ impl StreamExporter {
 }
 
 impl Export for StreamExporter {
-    async fn write(&self, docs: Vec<ShardDoc>) -> Result<()> {
+    async fn write(&self, docs: Vec<ShardDoc>) -> Result<usize> {
         log::debug!("Writing {} docs to stdout", docs.len());
+        let doc_count = docs.len();
         for doc in docs {
             serde_json::to_writer(std::io::stdout(), &doc)?;
             println!();
         }
-        Ok(())
+        Ok(doc_count)
     }
 
     async fn is_connected(&self) -> bool {
