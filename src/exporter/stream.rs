@@ -11,7 +11,7 @@ impl StreamExporter {
 }
 
 impl Export for StreamExporter {
-    fn write(&self, docs: Vec<ShardDoc>) -> Result<()> {
+    async fn write(&self, docs: Vec<ShardDoc>) -> Result<()> {
         log::debug!("Writing {} docs to stdout", docs.len());
         for doc in docs {
             serde_json::to_writer(std::io::stdout(), &doc)?;
@@ -20,7 +20,7 @@ impl Export for StreamExporter {
         Ok(())
     }
 
-    fn is_connected(&self) -> bool {
+    async fn is_connected(&self) -> bool {
         true
     }
 }

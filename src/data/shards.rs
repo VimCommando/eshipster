@@ -104,4 +104,8 @@ impl ShardDoc {
             stats,
         }
     }
+
+    pub fn as_value(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize ShardDoc")
+    }
 }
