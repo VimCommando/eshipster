@@ -17,7 +17,6 @@ pub struct ElasticsearchBuilder {
     cert_validation: CertificateValidation,
     connection_pool: SingleNodeConnectionPool,
     headers: http::headers::HeaderMap,
-    url: Url,
 }
 
 impl ElasticsearchBuilder {
@@ -27,9 +26,8 @@ impl ElasticsearchBuilder {
 
         Self {
             cert_validation: CertificateValidation::Default,
-            connection_pool: SingleNodeConnectionPool::new(url.clone()),
+            connection_pool: SingleNodeConnectionPool::new(url),
             headers,
-            url,
         }
     }
 
