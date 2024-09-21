@@ -1,3 +1,4 @@
+use crate::config;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -30,7 +31,7 @@ pub struct ShardStats {
 pub struct DocStats {
     count: u64,
     deleted: u64,
-    total_size_in_bytes: u64,
+    total_size_in_bytes: Option<u64>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -75,6 +76,8 @@ pub struct ShardRouting {
 
 #[derive(Serialize)]
 pub struct ShardDoc {
+    #[serde(rename = "@timestamp")]
+    timestamp: i64,
     index: IndexDoc,
     shard: ShardData,
     stats: ShardStats,
@@ -96,6 +99,7 @@ pub struct IndexDoc {
 impl ShardDoc {
     pub fn new(stats: ShardStats, name: String, uuid: String, number: u16) -> Self {
         ShardDoc {
+            timestamp: *config::START_TIME,
             index: IndexDoc { name, uuid },
             shard: ShardData {
                 number,
@@ -106,6 +110,12 @@ impl ShardDoc {
     }
 
     pub fn as_value(&self) -> serde_json::Value {
-        serde_json::to_value(self).expect("Failed to serialize ShardDoc")
+        match serde_json::to_value(self) {
+            Ok(value) => value,
+            Err(e) => {
+                log::error!("Failed to serialize ShardDoc: {}", e);
+                serde_json::Value::Null
+            }
+        }
     }
 }

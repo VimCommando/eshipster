@@ -1,5 +1,8 @@
+pub mod index_template;
+
+use super::auth::Auth;
+use super::host::Host;
 use base64::{engine::general_purpose::STANDARD, Engine};
-use clap::ValueEnum;
 use color_eyre::eyre::Result;
 use elasticsearch::{
     self,
@@ -8,15 +11,14 @@ use elasticsearch::{
         self,
         transport::{SingleNodeConnectionPool, TransportBuilder},
     },
+    Elasticsearch,
 };
-use std::str::FromStr;
 use url::Url;
 
 pub struct ElasticsearchBuilder {
     cert_validation: CertificateValidation,
     connection_pool: SingleNodeConnectionPool,
     headers: http::headers::HeaderMap,
-    url: Url,
 }
 
 impl ElasticsearchBuilder {
@@ -26,9 +28,8 @@ impl ElasticsearchBuilder {
 
         Self {
             cert_validation: CertificateValidation::Default,
-            connection_pool: SingleNodeConnectionPool::new(url.clone()),
+            connection_pool: SingleNodeConnectionPool::new(url),
             headers,
-            url,
         }
     }
 
@@ -83,54 +84,30 @@ impl ElasticsearchBuilder {
             .build()?;
         Ok(elasticsearch::Elasticsearch::new(transport))
     }
-}
 
-#[derive(Clone, Debug, ValueEnum)]
-pub enum AuthType {
-    Apikey,
-    Basic,
-    None,
-}
-
-impl FromStr for AuthType {
-    type Err = ();
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "apikey" => Ok(Self::Apikey),
-            "basic" => Ok(Self::Basic),
-            "none" => Ok(Self::None),
-            _ => Err(()),
-        }
-    }
-}
-
-pub enum Auth {
-    Apikey(String),
-    Basic(String, String),
-    None,
-}
-
-impl Auth {
-    pub fn new(
-        r#type: &AuthType,
-        username: Option<String>,
-        password: Option<String>,
-        apikey: Option<String>,
-    ) -> Self {
-        match (r#type, username, password, apikey) {
-            (AuthType::Apikey, _, _, Some(apikey)) => Self::Apikey(apikey),
-            (AuthType::Basic, Some(username), Some(password), _) => Self::Basic(username, password),
-            (AuthType::None, _, _, _) | _ => Self::None,
-        }
-    }
-}
-
-impl std::fmt::Display for Auth {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Apikey(_) => write!(f, "Apikey"),
-            Self::Basic(_, _) => write!(f, "Basic"),
-            Self::None => write!(f, "None"),
-        }
+    pub fn from_host(host: Host) -> Result<Elasticsearch> {
+        let client = match host {
+            Host::ApiKey {
+                apikey,
+                url,
+                insecure,
+            } => Self::new(url)
+                .apikey(apikey)
+                .insecure(insecure.unwrap_or(false))
+                .build()?,
+            Host::Basic {
+                insecure,
+                username,
+                password,
+                url,
+            } => Self::new(url)
+                .basic_auth(username, password)
+                .insecure(insecure.unwrap_or(false))
+                .build()?,
+            Host::None { url, insecure } => {
+                Self::new(url).insecure(insecure.unwrap_or(false)).build()?
+            }
+        };
+        Ok(client)
     }
 }

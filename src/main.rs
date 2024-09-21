@@ -1,17 +1,13 @@
 mod client;
+mod config;
 mod data;
-mod env;
 mod exporter;
 mod processor;
 mod receiver;
 
 use clap::{Parser, Subcommand};
 use client::AuthType;
-use color_eyre::eyre::Result;
-use data::ShardDoc;
-use dotenvy::dotenv;
 use exporter::Exporter;
-use processor::extract_shard_docs;
 use receiver::Receiver;
 
 // Define command line arguments
@@ -65,8 +61,16 @@ enum Commands {
     /// Setup Elasticsearch assets for visualizing output data
     Setup {
         /// Elasticsearch host to setup datastream assets in
-        #[arg(help = "Elasticsearch host to setup datastream assets in")]
+        #[arg(help = "Elasticsearch host to setup assets in")]
         host: String,
+        /// Authentication method to use (none, basic, apikey, etc.)
+        #[arg(
+            default_value = "none",
+            help = "Authentication method",
+            long,
+            value_enum
+        )]
+        auth: AuthType,
     },
     /// Continuously monitor and enforce shard balance on an Elasticsearch cluster
     Watch {
@@ -81,14 +85,18 @@ enum Commands {
 
 #[tokio::main]
 async fn main() {
-    // Load environment variables from .env file
-    dotenv().ok();
+    config::load();
 
     // Initialize logger
-    let env = env_logger::Env::default().filter_or("LOG_LEVEL", env::LOG_LEVEL);
+    let env = env_logger::Env::default().filter_or("LOG_LEVEL", config::LOG_LEVEL);
     env_logger::Builder::from_env(env)
         .format_timestamp_millis()
         .init();
+
+    std::panic::set_hook(Box::new(|panic| {
+        // Use the error level to log the panic
+        log::error!("{}", panic);
+    }));
 
     // Use clap to parse command line arguments
     let cli = Cli::parse();
@@ -112,7 +120,7 @@ async fn main() {
             let reciever = Receiver::parse(input, input_auth).expect("Failed to parse input");
             let exporter =
                 Exporter::parse(output.as_ref(), output_auth).expect("Failed to parse output");
-            let docs = evaluate_shard_balance(&reciever)
+            let docs = processor::evaluate_shard_balance(&reciever)
                 .await
                 .expect("Failed to evaluate shard balance");
 
@@ -120,12 +128,15 @@ async fn main() {
                 true => log::info!("Connected to {exporter}"),
                 false => log::warn!("Failed to connect to {exporter}"),
             };
-            log::info!("Writing docs to {exporter}");
-            exporter.write(docs).await.expect("Failed to write docs");
+            let doc_count = exporter.write(docs).await.expect("Error writing docs");
+            log::info!("Wrote {doc_count} docs to {exporter}");
         }
-        Commands::Setup { host } => {
+        Commands::Setup { host, auth } => {
             log::info!("Setting up eshipster datastreams on {host}");
-            todo!("setup eshipster data streams.");
+            let exporter = Exporter::parse(Some(host), auth).expect("Error parsing output");
+            client::setup::elasticsearch(&exporter)
+                .await
+                .expect("Error on Elasticsearch setup");
         }
         Commands::Watch { host, output } => {
             log::info!("Watching shard balance on {host}");
@@ -136,12 +147,4 @@ async fn main() {
             todo!("the watch service.");
         }
     }
-}
-
-async fn evaluate_shard_balance(reciever: &Receiver) -> Result<Vec<ShardDoc>> {
-    log::info!("Evaluating shard balance of {reciever}");
-    let indices_stats = reciever.read_indices_stats().await?;
-    log::warn!("TODO: perform calculations");
-    let shard_docs = extract_shard_docs(indices_stats)?;
-    Ok(shard_docs)
 }

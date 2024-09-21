@@ -2,7 +2,8 @@ mod elasticsearch;
 mod file;
 mod stream;
 
-use crate::client::{Auth, AuthType};
+use crate::client::{Auth, AuthType, Host};
+use crate::config;
 use crate::data::ShardDoc;
 use color_eyre::eyre::Result;
 use elasticsearch::ElasticsearchExporter;
@@ -12,7 +13,7 @@ use stream::StreamExporter;
 use url::Url;
 
 trait Export {
-    async fn write(&self, docs: Vec<ShardDoc>) -> Result<()>;
+    async fn write(&self, docs: Vec<ShardDoc>) -> Result<usize>;
     async fn is_connected(&self) -> bool;
 }
 
@@ -41,14 +42,22 @@ impl Exporter {
             }
             Some(output) => output,
         };
+        // Attempt to parse the output as a known host
+        match Host::parse(output) {
+            Some(host) => {
+                let receiver = ElasticsearchExporter::from_host(host)?;
+                return Ok(Self::Elasticsearch(receiver));
+            }
+            None => log::debug!("Input was not a known host"),
+        }
         // Attempt to parse the output as a URL
         match Url::parse(output) {
             Ok(url) => {
                 let auth = Auth::new(
                     auth_type,
-                    std::env::var("ESHIPSTER_XP_USERNAME").ok(),
-                    std::env::var("ESHIPSTER_XP_PASSWORD").ok(),
-                    std::env::var("ESHIPSTER_XP_APIKEY").ok(),
+                    config::ESHIPSTER_XP_USERNAME.clone(),
+                    config::ESHIPSTER_XP_PASSWORD.clone(),
+                    config::ESHIPSTER_XP_APIKEY.clone(),
                 );
                 let exporter = ElasticsearchExporter::new(url, auth)?;
                 return Ok(Self::Elasticsearch(exporter));
@@ -61,7 +70,7 @@ impl Exporter {
         Ok(Self::File(exporter))
     }
 
-    pub async fn write(&self, docs: Vec<ShardDoc>) -> Result<()> {
+    pub async fn write(&self, docs: Vec<ShardDoc>) -> Result<usize> {
         match self {
             Self::Elasticsearch(exporter) => exporter.write(docs).await,
             Self::File(exporter) => exporter.write(docs).await,
