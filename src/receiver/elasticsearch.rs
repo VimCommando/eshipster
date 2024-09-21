@@ -1,5 +1,5 @@
 use super::Receive;
-use crate::client::{Auth, ElasticsearchBuilder};
+use crate::client::{Auth, ElasticsearchBuilder, Host};
 use crate::data::IndicesStats;
 use color_eyre::eyre::Result;
 use elasticsearch::{http, indices::IndicesStatsParts, params::Level, Elasticsearch};
@@ -17,6 +17,12 @@ impl ElasticsearchReceiver {
             .auth(auth)
             .build()?;
 
+        Ok(Self { client, url })
+    }
+
+    pub fn from_host(host: Host) -> Result<Self> {
+        let url = host.get_url();
+        let client = ElasticsearchBuilder::from_host(host)?;
         Ok(Self { client, url })
     }
 }

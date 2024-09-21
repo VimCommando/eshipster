@@ -2,7 +2,7 @@ mod elasticsearch;
 mod file;
 mod stream;
 
-use crate::client::{Auth, AuthType};
+use crate::client::{Auth, AuthType, Host};
 use crate::config;
 use crate::data::ShardDoc;
 use color_eyre::eyre::Result;
@@ -42,6 +42,14 @@ impl Exporter {
             }
             Some(output) => output,
         };
+        // Attempt to parse the output as a known host
+        match Host::parse(output) {
+            Some(host) => {
+                let receiver = ElasticsearchExporter::from_host(host)?;
+                return Ok(Self::Elasticsearch(receiver));
+            }
+            None => log::debug!("Input was not a known host"),
+        }
         // Attempt to parse the output as a URL
         match Url::parse(output) {
             Ok(url) => {

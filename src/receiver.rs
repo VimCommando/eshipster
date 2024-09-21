@@ -1,7 +1,7 @@
 mod elasticsearch;
 mod file;
 
-use crate::client::{Auth, AuthType};
+use crate::client::{Auth, AuthType, Host};
 use crate::config;
 use crate::data::IndicesStats;
 use color_eyre::eyre::{eyre, Result};
@@ -23,6 +23,13 @@ pub enum Receiver {
 impl Receiver {
     pub fn parse(input: &str, auth_type: &AuthType) -> Result<Self> {
         log::debug!("Parsing receiver: {}", input);
+        match Host::parse(input) {
+            Some(host) => {
+                let receiver = ElasticsearchReceiver::from_host(host)?;
+                return Ok(Self::Elasticsearch(receiver));
+            }
+            None => log::debug!("Input was not a known host"),
+        }
         // Attempt to parse the input as a URL
         match Url::parse(input) {
             Ok(url) => {
