@@ -1,4 +1,5 @@
 use super::LookupDisplay;
+use crate::data::IndexSettings;
 use serde::Serialize;
 
 #[derive(Clone, Serialize)]
@@ -34,8 +35,14 @@ impl AsRef<IndexData> for IndexData {
     }
 }
 
-impl LookupDisplay for IndexData {
+impl LookupDisplay for IndexSettings {
     fn display() -> &'static str {
-        "index_data"
+        "index_settings"
+    }
+}
+
+impl std::fmt::Display for IndexData {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", serde_json::to_string(self).unwrap())
     }
 }

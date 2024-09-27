@@ -1,9 +1,9 @@
 use super::ElasticsearchApi;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct IndexSettings {
     allocation: Option<Value>,
     auto_expand_replicas: Option<String>,
@@ -31,7 +31,7 @@ pub struct IndexSettings {
     shard_limit: Option<Value>,
     store: Option<Value>,
     sort: Option<Value>,
-    uuid: String,
+    pub uuid: String,
     version: Value,
 }
 
@@ -45,14 +45,14 @@ fn default_refresh_interval() -> String {
 
 // Deserializing data structures
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Settings {
-    settings: Index,
+    pub settings: Index,
 }
 
-#[derive(Deserialize)]
-struct Index {
-    index: IndexSettings,
+#[derive(Clone, Deserialize, Serialize)]
+pub struct Index {
+    pub index: IndexSettings,
 }
 
 // The standard deserializer from serde_json does not deserializing numbers from

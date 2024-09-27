@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct DataStreams {
-    data_streams: Vec<DataStream>,
+    pub data_streams: Vec<DataStream>,
 }
 
 #[derive(Clone, Deserialize, Serialize)]

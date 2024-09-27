@@ -71,3 +71,9 @@ where
 pub trait LookupDisplay {
     fn display() -> &'static str;
 }
+
+impl<T: Serialize> std::fmt::Display for Lookup<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", serde_json::to_string(self).unwrap())
+    }
+}

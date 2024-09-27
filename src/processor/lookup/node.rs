@@ -1,3 +1,5 @@
+use crate::data::Node;
+
 use super::LookupDisplay;
 use serde::Serialize;
 use serde_json::Value;
@@ -34,5 +36,17 @@ impl NodeData {
 impl LookupDisplay for NodeData {
     fn display() -> &'static str {
         "node_data"
+    }
+}
+
+impl LookupDisplay for Node {
+    fn display() -> &'static str {
+        "nodes"
+    }
+}
+
+impl std::fmt::Display for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", serde_json::to_string(self).unwrap())
     }
 }

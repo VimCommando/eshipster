@@ -62,7 +62,7 @@ impl LookupDisplay for DataStreamDoc {
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct DataStreamWrapper {
-    data_streams: Vec<DataStream>,
+    pub data_streams: Vec<DataStream>,
 }
 
 impl From<&String> for Lookup<DataStreamDoc> {
@@ -89,5 +89,17 @@ impl From<&String> for Lookup<DataStreamDoc> {
             lookup_data_stream.entries.len(),
         );
         lookup_data_stream
+    }
+}
+
+impl LookupDisplay for DataStream {
+    fn display() -> &'static str {
+        "data_stream"
+    }
+}
+
+impl std::fmt::Display for DataStream {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", serde_json::to_string(self).unwrap())
     }
 }

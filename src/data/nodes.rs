@@ -1,9 +1,9 @@
 use super::ElasticsearchApi;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Node {
     //aggregations: Value,
     attributes: Value,
@@ -18,7 +18,7 @@ pub struct Node {
     ip: String,
     //jvm: Value,
     //modules: Value,
-    name: String,
+    pub name: String,
     os: Value,
     //plugins: Value,
     //process: Value,
@@ -32,19 +32,17 @@ pub struct Node {
     version: String,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 struct ComponentVersion {
     ml_config_version: i64,
     transform_config_version: i64,
 }
 
-// Deserializing data structures
-
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct Nodes {
     //_nodes: Value,
-    cluster_name: Option<String>,
-    nodes: HashMap<String, Node>,
+    pub cluster_name: Option<String>,
+    pub nodes: HashMap<String, Node>,
 }
 
 impl ElasticsearchApi for Nodes {
