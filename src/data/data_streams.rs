@@ -43,6 +43,6 @@ impl ElasticsearchApi for DataStreams {
         "_data_stream".to_string()
     }
     fn file_name() -> String {
-        "commecrial/data_stream.json".to_string()
+        "commercial/data_stream.json".to_string()
     }
 }

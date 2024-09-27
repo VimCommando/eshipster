@@ -1,26 +1,25 @@
+mod directory;
 mod elasticsearch;
-mod file;
 
 use crate::client::{Auth, AuthType, Host};
 use crate::config;
-use crate::data::{ElasticsearchApi, IndicesStats};
+use crate::data::ElasticsearchApi;
 use color_eyre::eyre::{eyre, Result};
+use directory::DirectoryReceiver;
 use elasticsearch::ElasticsearchReceiver;
-use file::FileReceiver;
 use serde::de::DeserializeOwned;
 use std::path::Path;
 use url::Url;
 
 trait Receive {
     async fn is_connected(&self) -> bool;
-    async fn read_indices_stats(&self) -> Result<IndicesStats>;
     async fn get<T>(&self) -> Result<T>
     where
         T: ElasticsearchApi + DeserializeOwned;
 }
 
 pub enum Receiver {
-    File(FileReceiver),
+    File(DirectoryReceiver),
     Elasticsearch(ElasticsearchReceiver),
 }
 
@@ -51,21 +50,12 @@ impl Receiver {
 
         // Fallback to a file path
         let path = Path::new(&input);
-        match path.is_file() {
+        match path.is_dir() {
             true => {
-                let file_receiver = FileReceiver::new(path.to_path_buf())?;
+                let file_receiver = DirectoryReceiver::new(path.to_path_buf())?;
                 return Ok(Self::File(file_receiver));
             }
-            false => Err(eyre!("Could not parse input")),
-        }
-    }
-
-    pub async fn read_indices_stats(&self) -> Result<IndicesStats> {
-        match self {
-            Receiver::File(file_receiver) => file_receiver.read_indices_stats().await,
-            Receiver::Elasticsearch(elasticsearch_receiver) => {
-                elasticsearch_receiver.read_indices_stats().await
-            }
+            false => Err(eyre!("Filesystem input must be a directory")),
         }
     }
 

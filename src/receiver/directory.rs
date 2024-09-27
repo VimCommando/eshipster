@@ -1,22 +1,32 @@
 use super::Receive;
 use crate::data::{ElasticsearchApi, IndicesStats};
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 use serde::de::DeserializeOwned;
 use std::{fs::File, io::BufReader, path::PathBuf};
 
-pub struct FileReceiver {
+pub struct DirectoryReceiver {
     path: PathBuf,
-    file: File,
 }
 
-impl FileReceiver {
+impl DirectoryReceiver {
     pub fn new(path: PathBuf) -> Result<Self> {
-        let file = File::open(&path)?;
-        Ok(Self { file, path })
+        match path.is_dir() {
+            true => {
+                log::debug!("Directory is valid: {}", path.display());
+                Ok(Self { path })
+            }
+            false => {
+                log::debug!("Directory is invalid: {}", path.display());
+                Err(eyre!(
+                    "Filesystme input must be a directory: {}",
+                    path.display()
+                ))
+            }
+        }
     }
 }
 
-impl Receive for FileReceiver {
+impl Receive for DirectoryReceiver {
     async fn is_connected(&self) -> bool {
         let is_file = self.path.is_file();
         let filename = self.path.to_str().unwrap_or("");
@@ -24,26 +34,20 @@ impl Receive for FileReceiver {
         is_file
     }
 
-    async fn read_indices_stats(&self) -> Result<IndicesStats> {
-        log::debug!("Reading file: {}", self.path.display());
-        let reader = BufReader::new(&self.file);
-        let indices_stats: IndicesStats = serde_json::from_reader(reader)?;
-        Ok(indices_stats)
-    }
-
     async fn get<T>(&self) -> Result<T>
     where
         T: DeserializeOwned + ElasticsearchApi,
     {
-        let path = PathBuf::from(T::file_name());
-        let file = File::open(&path)?;
+        let filename = &self.path.join(T::file_name());
+        log::debug!("Reading file: {}", &filename.display());
+        let file = File::open(&filename)?;
         let reader = BufReader::new(file);
         let data: T = serde_json::from_reader(reader)?;
         Ok(data)
     }
 }
 
-impl std::fmt::Display for FileReceiver {
+impl std::fmt::Display for DirectoryReceiver {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.path.display())
     }

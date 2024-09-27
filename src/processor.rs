@@ -12,6 +12,7 @@ pub async fn evaluate_shard_balance(reciever: &Receiver) -> Result<Vec<ShardDoc>
     log::info!("Evaluating shard balance of {reciever}");
     //let indices_stats = reciever.read_indices_stats().await?;
     let indices_stats: IndicesStats = reciever.get().await?;
+    log::info!("Indices stats entires: {}", indices_stats.indices.len());
 
     let mut indices_settings: IndicesSettings = reciever.get().await?;
     let mut indices_settings_lookup: Lookup<IndexSettings> = Lookup::new();
@@ -22,7 +23,10 @@ pub async fn evaluate_shard_balance(reciever: &Receiver) -> Result<Vec<ShardDoc>
             .with_name(&name)
             .with_id(&id);
     });
-    log::debug!("Indices settings lookup: {}", indices_settings_lookup);
+    log::info!(
+        "Indices settings lookup entires: {}",
+        indices_settings_lookup.len()
+    );
 
     let mut data_streams: DataStreams = reciever.get().await?;
     let mut data_streams_lookup: Lookup<DataStream> = Lookup::new();
@@ -30,7 +34,7 @@ pub async fn evaluate_shard_balance(reciever: &Receiver) -> Result<Vec<ShardDoc>
         let name = data_stream.name.clone();
         data_streams_lookup.add(data_stream).with_name(&name);
     });
-    log::debug!("Data stream lookup: {}", data_streams_lookup);
+    log::info!("Data stream lookup entires: {}", data_streams_lookup.len());
 
     let mut nodes: Nodes = reciever.get().await?;
     let mut nodes_lookup: Lookup<Node> = Lookup::new();
@@ -38,7 +42,7 @@ pub async fn evaluate_shard_balance(reciever: &Receiver) -> Result<Vec<ShardDoc>
         let name = node.name.clone();
         nodes_lookup.add(node).with_name(&name).with_id(&id);
     });
-    log::debug!("Nodes lookup: {}", nodes_lookup);
+    log::info!("Nodes lookup entires: {}", nodes_lookup.len());
 
     log::warn!("TODO: perform calculations");
     let shard_docs = index_stats::extract_shard_docs(indices_stats)?;

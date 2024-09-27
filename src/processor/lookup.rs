@@ -28,6 +28,10 @@ where
 
     // Getters
 
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
     pub fn by_name(&self, name: &str) -> Option<&T> {
         match self.by_name.get(name) {
             Some(index) => Some(&self.entries[*index]),
