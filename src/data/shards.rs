@@ -1,4 +1,4 @@
-use super::ElasticsearchApi;
+use super::{DataStream, ElasticsearchApi, IndexSettings, Node};
 use crate::config;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -35,7 +35,7 @@ pub struct ShardStats {
     indexing: IndexingStats,
     search: SearchStats,
     #[serde(skip_serializing)]
-    routing: ShardRouting,
+    pub routing: ShardRouting,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -79,7 +79,8 @@ pub struct SearchStats {
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct ShardRouting {
-    node: String,
+    #[serde(skip_serializing)]
+    pub node: String,
     primary: bool,
     relocating_node: Option<String>,
     state: String,
@@ -87,37 +88,38 @@ pub struct ShardRouting {
 
 #[derive(Serialize)]
 pub struct ShardDoc {
-    #[serde(rename = "@timestamp")]
-    timestamp: i64,
-    index: IndexDoc,
+    #[serde(flatten)]
+    enrich: ShardEnrich,
     shard: ShardData,
     stats: ShardStats,
+    #[serde(rename = "@timestamp")]
+    timestamp: i64,
 }
 
 #[derive(Serialize)]
 pub struct ShardData {
     number: u16,
     #[serde(flatten)]
-    routing: ShardRouting,
+    pub routing: ShardRouting,
 }
 
 #[derive(Clone, Serialize)]
-pub struct IndexDoc {
-    pub name: String,
-    pub uuid: String,
-    pub primary_shards: u16,
+pub struct ShardEnrich {
+    pub index: Option<IndexSettings>,
+    pub data_stream: Option<DataStream>,
+    pub node: Option<Node>,
 }
 
 impl ShardDoc {
-    pub fn new(number: u16, stats: ShardStats, index: IndexDoc) -> Self {
+    pub fn new(number: u16, stats: ShardStats, enrich: ShardEnrich) -> Self {
         ShardDoc {
-            timestamp: *config::START_TIME,
-            index,
+            enrich,
             shard: ShardData {
                 number,
                 routing: stats.routing.clone(),
             },
             stats,
+            timestamp: *config::START_TIME,
         }
     }
 

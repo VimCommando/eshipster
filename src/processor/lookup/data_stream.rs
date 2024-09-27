@@ -1,13 +1,21 @@
 use super::{Lookup, LookupDisplay};
-use crate::data::{DataStream, DataStreams};
+use crate::data::{DataStream, DataStreams, Indices};
 
 impl From<DataStreams> for Lookup<DataStream> {
     fn from(mut data_streams: DataStreams) -> Self {
         let mut lookup = Lookup::<DataStream>::new();
-        data_streams.data_streams.drain(..).for_each(|data_stream| {
-            let name = data_stream.name.clone();
-            lookup.add(data_stream).with_name(&name);
-        });
+        data_streams
+            .data_streams
+            .drain(..)
+            .for_each(|mut data_stream| {
+                let name = data_stream.name.clone();
+                let indices: Indices = data_stream.indices.drain(..).collect();
+                lookup.add(data_stream).with_name(&name);
+                // Each data stream can have multiple indices
+                indices.iter().for_each(|index| {
+                    lookup.with_id(&index.index_name.clone());
+                });
+            });
         lookup
     }
 }

@@ -1,9 +1,17 @@
 pub mod data_stream;
 pub mod index_settings;
 pub mod node;
+
+use crate::data::{DataStream, IndexSettings, Node};
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
+
+pub struct Lookups {
+    pub index: Lookup<IndexSettings>,
+    pub data_stream: Lookup<DataStream>,
+    pub node: Lookup<Node>,
+}
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct Lookup<T> {

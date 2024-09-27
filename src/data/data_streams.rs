@@ -6,13 +6,16 @@ pub struct DataStreams {
     pub data_streams: Vec<DataStream>,
 }
 
+pub type Indices = Vec<Index>;
+
 #[derive(Clone, Deserialize, Serialize)]
 pub struct DataStream {
     pub allow_custom_routing: Option<bool>,
     pub generation: u64,
     pub hidden: Option<bool>,
     pub ilm_policy: Option<String>,
-    pub indices: Vec<Index>,
+    #[serde(skip_serializing)]
+    pub indices: Indices,
     pub name: String,
     pub next_generation_managed_by: Option<String>,
     pub prefer_ilm: Option<bool>,

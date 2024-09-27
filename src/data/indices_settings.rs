@@ -36,7 +36,7 @@ pub struct IndexSettings {
 }
 
 fn default_codec() -> String {
-    String::from("best_speed")
+    String::from("default")
 }
 
 fn default_refresh_interval() -> String {
