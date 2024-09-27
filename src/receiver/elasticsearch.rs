@@ -1,8 +1,9 @@
 use super::Receive;
 use crate::client::{Auth, ElasticsearchBuilder, Host};
-use crate::data::IndicesStats;
+use crate::data::{ElasticsearchApi, IndicesStats};
 use color_eyre::eyre::Result;
 use elasticsearch::{http, indices::IndicesStatsParts, params::Level, Elasticsearch};
+use serde::de::DeserializeOwned;
 use url::Url;
 
 pub struct ElasticsearchReceiver {
@@ -72,6 +73,26 @@ impl Receive for ElasticsearchReceiver {
         // turbo-fish to use serde to parse the JSON response
         indices_stats
             .json::<IndicesStats>()
+            .await
+            .map_err(Into::into)
+    }
+
+    async fn get<T>(&self) -> Result<T>
+    where
+        T: ElasticsearchApi + DeserializeOwned,
+    {
+        let path = T::url_path();
+        self.client
+            .send(
+                http::Method::Get,
+                &path,
+                http::headers::HeaderMap::new(),
+                Option::<&String>::None,
+                Option::<&String>::None,
+                None,
+            )
+            .await?
+            .json::<T>()
             .await
             .map_err(Into::into)
     }

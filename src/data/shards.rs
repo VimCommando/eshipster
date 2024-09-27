@@ -1,21 +1,32 @@
+use super::ElasticsearchApi;
 use crate::config;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 pub struct IndicesStats {
     // _shards: Value,
     // _all: Value,
     pub indices: HashMap<String, IndexStats>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 pub struct IndexStats {
     // health: Option<String>,
-    // primaries: Value,
+    pub primaries: PrimaryStats,
     // total: Value,
     pub shards: HashMap<String, Vec<ShardStats>>,
     pub uuid: String,
+}
+
+#[derive(Deserialize)]
+pub struct PrimaryStats {
+    pub shard_stats: PrimaryShardStats,
+}
+
+#[derive(Deserialize)]
+pub struct PrimaryShardStats {
+    pub total_count: u16,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -90,17 +101,18 @@ pub struct ShardData {
     routing: ShardRouting,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 pub struct IndexDoc {
-    name: String,
-    uuid: String,
+    pub name: String,
+    pub uuid: String,
+    pub primary_shards: u16,
 }
 
 impl ShardDoc {
-    pub fn new(stats: ShardStats, name: String, uuid: String, number: u16) -> Self {
+    pub fn new(number: u16, stats: ShardStats, index: IndexDoc) -> Self {
         ShardDoc {
             timestamp: *config::START_TIME,
-            index: IndexDoc { name, uuid },
+            index,
             shard: ShardData {
                 number,
                 routing: stats.routing.clone(),
@@ -117,5 +129,14 @@ impl ShardDoc {
                 serde_json::Value::Null
             }
         }
+    }
+}
+
+impl ElasticsearchApi for IndicesStats {
+    fn url_path() -> String {
+        "_all/_stats?level=shards".to_string()
+    }
+    fn file_name() -> String {
+        "indices_stats.json".to_string()
     }
 }

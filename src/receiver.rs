@@ -3,16 +3,20 @@ mod file;
 
 use crate::client::{Auth, AuthType, Host};
 use crate::config;
-use crate::data::IndicesStats;
+use crate::data::{ElasticsearchApi, IndicesStats};
 use color_eyre::eyre::{eyre, Result};
 use elasticsearch::ElasticsearchReceiver;
 use file::FileReceiver;
+use serde::de::DeserializeOwned;
 use std::path::Path;
 use url::Url;
 
 trait Receive {
     async fn is_connected(&self) -> bool;
     async fn read_indices_stats(&self) -> Result<IndicesStats>;
+    async fn get<T>(&self) -> Result<T>
+    where
+        T: ElasticsearchApi + DeserializeOwned;
 }
 
 pub enum Receiver {
@@ -61,6 +65,18 @@ impl Receiver {
             Receiver::File(file_receiver) => file_receiver.read_indices_stats().await,
             Receiver::Elasticsearch(elasticsearch_receiver) => {
                 elasticsearch_receiver.read_indices_stats().await
+            }
+        }
+    }
+
+    pub async fn get<T>(&self) -> Result<T>
+    where
+        T: ElasticsearchApi + DeserializeOwned,
+    {
+        match self {
+            Receiver::File(file_receiver) => file_receiver.get::<T>().await,
+            Receiver::Elasticsearch(elasticsearch_receiver) => {
+                elasticsearch_receiver.get::<T>().await
             }
         }
     }

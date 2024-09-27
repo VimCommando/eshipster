@@ -1,6 +1,7 @@
 use super::Receive;
-use crate::data::IndicesStats;
+use crate::data::{ElasticsearchApi, IndicesStats};
 use color_eyre::eyre::Result;
+use serde::de::DeserializeOwned;
 use std::{fs::File, io::BufReader, path::PathBuf};
 
 pub struct FileReceiver {
@@ -28,6 +29,17 @@ impl Receive for FileReceiver {
         let reader = BufReader::new(&self.file);
         let indices_stats: IndicesStats = serde_json::from_reader(reader)?;
         Ok(indices_stats)
+    }
+
+    async fn get<T>(&self) -> Result<T>
+    where
+        T: DeserializeOwned + ElasticsearchApi,
+    {
+        let path = PathBuf::from(T::file_name());
+        let file = File::open(&path)?;
+        let reader = BufReader::new(file);
+        let data: T = serde_json::from_reader(reader)?;
+        Ok(data)
     }
 }
 
