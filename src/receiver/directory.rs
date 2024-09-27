@@ -1,5 +1,5 @@
 use super::Receive;
-use crate::data::{ElasticsearchApi, IndicesStats};
+use crate::data::ElasticsearchApi;
 use color_eyre::eyre::{eyre, Result};
 use serde::de::DeserializeOwned;
 use std::{fs::File, io::BufReader, path::PathBuf};
