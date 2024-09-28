@@ -1,21 +1,22 @@
+use super::{ElasticsearchApi, IndexSettings, Node};
 use crate::config;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 pub struct IndicesStats {
     // _shards: Value,
     // _all: Value,
     pub indices: HashMap<String, IndexStats>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 pub struct IndexStats {
     // health: Option<String>,
     // primaries: Value,
     // total: Value,
     pub shards: HashMap<String, Vec<ShardStats>>,
-    pub uuid: String,
+    // uuid: String,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -24,7 +25,7 @@ pub struct ShardStats {
     indexing: IndexingStats,
     search: SearchStats,
     #[serde(skip_serializing)]
-    routing: ShardRouting,
+    pub routing: ShardRouting,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -68,44 +69,90 @@ pub struct SearchStats {
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct ShardRouting {
-    node: String,
+    #[serde(skip_serializing)]
+    pub node: String,
     primary: bool,
     relocating_node: Option<String>,
     state: String,
 }
 
 #[derive(Serialize)]
+struct DataStreamName {
+    r#type: &'static str,
+    dataset: &'static str,
+    namespace: &'static str,
+}
+
+#[derive(Serialize)]
 pub struct ShardDoc {
-    #[serde(rename = "@timestamp")]
-    timestamp: i64,
-    index: IndexDoc,
+    data_stream: DataStreamName,
+    #[serde(flatten)]
+    enrich: ShardEnrich,
     shard: ShardData,
     stats: ShardStats,
+    #[serde(rename = "@timestamp")]
+    timestamp: i64,
+}
+
+impl ShardDoc {
+    pub fn data_stream_name(&self) -> String {
+        self.enrich
+            .index
+            .as_ref()
+            .and_then(|i| i.data_stream.as_ref())
+            .map(|d| d.name.clone())
+            .unwrap_or_default()
+    }
+
+    pub fn index_name(&self) -> String {
+        self.enrich
+            .index
+            .as_ref()
+            .and_then(|i| i.name.clone())
+            .unwrap_or_default()
+    }
+
+    pub fn shard_number(&self) -> u16 {
+        self.shard.number
+    }
+
+    pub fn primary(&self) -> bool {
+        self.shard.routing.primary
+    }
+
+    pub fn set_desired_node(&mut self, name: String) {
+        self.enrich.node.as_mut().map(|n| n.desired = Some(name));
+    }
 }
 
 #[derive(Serialize)]
 pub struct ShardData {
     number: u16,
     #[serde(flatten)]
-    routing: ShardRouting,
+    pub routing: ShardRouting,
 }
 
-#[derive(Serialize)]
-pub struct IndexDoc {
-    name: String,
-    uuid: String,
+#[derive(Clone, Serialize)]
+pub struct ShardEnrich {
+    pub index: Option<IndexSettings>,
+    pub node: Option<Node>,
 }
 
 impl ShardDoc {
-    pub fn new(stats: ShardStats, name: String, uuid: String, number: u16) -> Self {
+    pub fn new(number: u16, stats: ShardStats, enrich: ShardEnrich) -> Self {
         ShardDoc {
-            timestamp: *config::START_TIME,
-            index: IndexDoc { name, uuid },
+            data_stream: DataStreamName {
+                r#type: "metrics",
+                dataset: "shard",
+                namespace: "eshipster",
+            },
+            enrich,
             shard: ShardData {
                 number,
                 routing: stats.routing.clone(),
             },
             stats,
+            timestamp: *config::START_TIME,
         }
     }
 
@@ -117,5 +164,14 @@ impl ShardDoc {
                 serde_json::Value::Null
             }
         }
+    }
+}
+
+impl ElasticsearchApi for IndicesStats {
+    fn url_path() -> String {
+        "_all/_stats?level=shards".to_string()
+    }
+    fn file_name() -> String {
+        "indices_stats.json".to_string()
     }
 }

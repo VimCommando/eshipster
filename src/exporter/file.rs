@@ -3,7 +3,7 @@ use crate::data::ShardDoc;
 use color_eyre::eyre::Result;
 use std::{
     fs::{File, OpenOptions},
-    io::Write,
+    io::{BufWriter, Write},
     path::PathBuf,
 };
 
@@ -33,12 +33,14 @@ impl Export for FileExporter {
 
     async fn write(&self, docs: Vec<ShardDoc>) -> Result<usize> {
         log::debug!("Writing docs to file {}", &self.path.display());
+        let mut writer = BufWriter::new(&self.file);
         let mut doc_count = 0;
         for doc in docs {
-            serde_json::to_writer(&self.file, &doc)?;
-            writeln!(&self.file)?;
+            serde_json::to_writer(&mut writer, &doc)?;
+            writeln!(&mut writer)?;
             doc_count += 1;
         }
+        writer.flush()?;
         Ok(doc_count)
     }
 }
