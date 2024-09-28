@@ -78,6 +78,7 @@ where
 
     // Formatters
 
+    #[allow(dead_code)]
     pub fn to_value(&self) -> Value {
         let json = serde_json::to_string(&self).expect("Failed to convert lookup to JSON");
         serde_json::from_str(&json).expect("Failed to convert lookup JSON to Value")

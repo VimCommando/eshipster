@@ -11,6 +11,7 @@ use serde::de::DeserializeOwned;
 use std::path::Path;
 use url::Url;
 
+#[allow(dead_code)]
 trait Receive {
     async fn is_connected(&self) -> bool;
     async fn get<T>(&self) -> Result<T>

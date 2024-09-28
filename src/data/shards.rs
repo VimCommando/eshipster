@@ -1,6 +1,5 @@
 use super::{ElasticsearchApi, IndexSettings, Node};
 use crate::config;
-use elasticsearch::params::Order;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -11,6 +10,7 @@ pub struct IndicesStats {
     pub indices: HashMap<String, IndexStats>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct IndexStats {
     // health: Option<String>,
@@ -20,11 +20,13 @@ pub struct IndexStats {
     pub uuid: String,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct PrimaryStats {
     pub shard_stats: PrimaryShardStats,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct PrimaryShardStats {
     pub total_count: u16,
