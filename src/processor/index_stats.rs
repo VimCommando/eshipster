@@ -20,9 +20,14 @@ fn extract_index_stats(
     mut index_stats: IndexStats,
     lookups: &Lookups,
 ) -> Vec<ShardDoc> {
+    let data_stream = lookups.data_stream.by_id(&index_name).cloned();
     let enrich = ShardEnrich {
-        index: lookups.index.by_name(&index_name).cloned(),
-        data_stream: lookups.data_stream.by_id(&index_name).cloned(),
+        index: lookups.index.by_name(&index_name).map(|index| {
+            index
+                .clone()
+                .with_name(&index_name)
+                .with_data_stream(data_stream)
+        }),
         node: None,
     };
     index_stats

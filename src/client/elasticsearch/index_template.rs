@@ -23,6 +23,19 @@ pub const INDEX_TEMPLATE: LazyCell<Value> = LazyCell::new(|| {
             }
           ],
           "properties": {
+            "data_stream": {
+              "properties": {
+                "dataset": {
+                  "type": "constant_keyword"
+                },
+                "namespace": {
+                  "type": "constant_keyword"
+                },
+                "type": {
+                  "type": "constant_keyword"
+                }
+              }
+            },
             "index": {
               "properties": {
                 "name": {

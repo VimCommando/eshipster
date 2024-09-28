@@ -87,7 +87,15 @@ pub struct ShardRouting {
 }
 
 #[derive(Serialize)]
+struct DataStreamName {
+    r#type: &'static str,
+    dataset: &'static str,
+    namespace: &'static str,
+}
+
+#[derive(Serialize)]
 pub struct ShardDoc {
+    data_stream: DataStreamName,
     #[serde(flatten)]
     enrich: ShardEnrich,
     shard: ShardData,
@@ -106,13 +114,17 @@ pub struct ShardData {
 #[derive(Clone, Serialize)]
 pub struct ShardEnrich {
     pub index: Option<IndexSettings>,
-    pub data_stream: Option<DataStream>,
     pub node: Option<Node>,
 }
 
 impl ShardDoc {
     pub fn new(number: u16, stats: ShardStats, enrich: ShardEnrich) -> Self {
         ShardDoc {
+            data_stream: DataStreamName {
+                r#type: "metrics",
+                dataset: "shard",
+                namespace: "eshipster",
+            },
             enrich,
             shard: ShardData {
                 number,

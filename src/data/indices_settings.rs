@@ -1,4 +1,4 @@
-use super::ElasticsearchApi;
+use super::{DataStream, ElasticsearchApi};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -12,11 +12,13 @@ pub struct IndexSettings {
     codec: String,
     #[serde(deserialize_with = "number_from_string")]
     creation_date: Option<i64>,
+    data_stream: Option<DataStream>,
     default_pipeline: Option<String>,
     final_pipeline: Option<String>,
     hidden: Option<String>,
     lifecycle: Option<Value>,
     mapping: Option<Value>,
+    name: Option<String>,
     #[serde(deserialize_with = "number_from_string")]
     number_of_replicas: Option<i64>,
     #[serde(deserialize_with = "number_from_string")]
@@ -33,6 +35,22 @@ pub struct IndexSettings {
     sort: Option<Value>,
     pub uuid: String,
     version: Value,
+}
+
+impl IndexSettings {
+    pub fn with_name(self, name: &str) -> Self {
+        Self {
+            name: Some(name.to_string()),
+            ..self
+        }
+    }
+
+    pub fn with_data_stream(self, data_stream: Option<DataStream>) -> Self {
+        Self {
+            data_stream,
+            ..self
+        }
+    }
 }
 
 fn default_codec() -> String {
