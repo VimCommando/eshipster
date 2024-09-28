@@ -1,7 +1,7 @@
 mod index_stats;
 mod lookup;
 
-use crate::data::{DataStreams, IndicesSettings, IndicesStats, Nodes, ShardDoc};
+use crate::data::{DataStreams, IndicesSettings, IndicesStats, Node, Nodes, ShardDoc};
 use crate::receiver::Receiver;
 use color_eyre::eyre::Result;
 use lookup::{Lookup, Lookups};
@@ -29,8 +29,35 @@ pub async fn evaluate_shard_balance(reciever: &Receiver) -> Result<Vec<ShardDoc>
     let indices_stats: IndicesStats = reciever.get().await?;
     log::info!("Indices stats entires: {}", indices_stats.indices.len());
 
-    let shard_docs = index_stats::extract_shard_docs(indices_stats, &lookups)?;
+    let mut shards = index_stats::extract_shard_docs(indices_stats, &lookups)?;
+    log::debug!("Shards starting: {}", &shards.len());
+    rebalance_shards(lookups, &mut shards)?;
+    log::debug!("Shards rebalanced: {}", &shards.len());
+    Ok(shards)
+}
 
-    log::warn!("TODO: perform calculations");
-    Ok(shard_docs)
+fn rebalance_shards(lookups: Lookups, shards: &mut Vec<ShardDoc>) -> Result<()> {
+    log::info!("Rebalancing shards");
+    let role = String::from("data_hot");
+    let hot_nodes: Vec<&Node> = lookups
+        .node
+        .get_entries()
+        .iter()
+        .filter(|node| node.roles.contains(&role))
+        .collect();
+
+    shards.sort_unstable_by(|a, b| {
+        a.data_stream_name()
+            .cmp(&b.data_stream_name())
+            .then(a.index_name().cmp(&b.index_name()))
+            .then(a.shard_number().cmp(&b.shard_number()))
+            .then(a.primary().cmp(&b.primary()))
+    });
+
+    shards.iter_mut().enumerate().for_each(|(i, shard)| {
+        let node_name = hot_nodes[i % hot_nodes.len()].name.clone();
+        shard.set_desired_node(node_name)
+    });
+
+    Ok(())
 }

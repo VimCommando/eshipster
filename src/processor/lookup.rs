@@ -54,6 +54,10 @@ where
         }
     }
 
+    pub fn get_entries(&self) -> &Vec<T> {
+        &self.entries
+    }
+
     // Setters
 
     pub fn add(&mut self, value: T) -> &mut Self {

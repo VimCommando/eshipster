@@ -12,13 +12,13 @@ pub struct IndexSettings {
     codec: String,
     #[serde(deserialize_with = "number_from_string")]
     creation_date: Option<i64>,
-    data_stream: Option<DataStream>,
+    pub data_stream: Option<DataStream>,
     default_pipeline: Option<String>,
     final_pipeline: Option<String>,
     hidden: Option<String>,
     lifecycle: Option<Value>,
     mapping: Option<Value>,
-    name: Option<String>,
+    pub name: Option<String>,
     #[serde(deserialize_with = "number_from_string")]
     number_of_replicas: Option<i64>,
     #[serde(deserialize_with = "number_from_string")]

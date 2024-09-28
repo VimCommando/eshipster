@@ -1,5 +1,6 @@
-use super::{DataStream, ElasticsearchApi, IndexSettings, Node};
+use super::{ElasticsearchApi, IndexSettings, Node};
 use crate::config;
+use elasticsearch::params::Order;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -102,6 +103,69 @@ pub struct ShardDoc {
     stats: ShardStats,
     #[serde(rename = "@timestamp")]
     timestamp: i64,
+}
+
+impl ShardDoc {
+    pub fn data_stream_name(&self) -> String {
+        self.enrich
+            .index
+            .as_ref()
+            .and_then(|i| i.data_stream.as_ref())
+            .map(|d| d.name.clone())
+            .unwrap_or_default()
+    }
+
+    pub fn index_name(&self) -> String {
+        self.enrich
+            .index
+            .as_ref()
+            .and_then(|i| i.name.clone())
+            .unwrap_or_default()
+    }
+
+    pub fn shard_number(&self) -> u16 {
+        self.shard.number
+    }
+
+    pub fn primary(&self) -> bool {
+        self.shard.routing.primary
+    }
+
+    pub fn set_desired_node(&mut self, name: String) {
+        self.enrich.node.as_mut().map(|n| n.desired = Some(name));
+    }
+}
+
+impl std::cmp::PartialEq for ShardDoc {
+    fn eq(&self, other: &Self) -> bool {
+        self.timestamp == other.timestamp
+    }
+}
+
+impl std::cmp::PartialOrd for ShardDoc {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(&other))
+    }
+
+    fn ge(&self, other: &Self) -> bool {
+        true
+    }
+
+    fn le(&self, other: &Self) -> bool {
+        true
+    }
+
+    fn lt(&self, other: &Self) -> bool {
+        true
+    }
+}
+
+impl std::cmp::Eq for ShardDoc {}
+
+impl std::cmp::Ord for ShardDoc {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.timestamp.cmp(&other.timestamp)
+    }
 }
 
 #[derive(Serialize)]
