@@ -10,26 +10,13 @@ pub struct IndicesStats {
     pub indices: HashMap<String, IndexStats>,
 }
 
-#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct IndexStats {
     // health: Option<String>,
-    pub primaries: PrimaryStats,
+    // primaries: Value,
     // total: Value,
     pub shards: HashMap<String, Vec<ShardStats>>,
-    pub uuid: String,
-}
-
-#[allow(dead_code)]
-#[derive(Deserialize)]
-pub struct PrimaryStats {
-    pub shard_stats: PrimaryShardStats,
-}
-
-#[allow(dead_code)]
-#[derive(Deserialize)]
-pub struct PrimaryShardStats {
-    pub total_count: u16,
+    // uuid: String,
 }
 
 #[derive(Deserialize, Serialize)]
