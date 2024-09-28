@@ -136,38 +136,6 @@ impl ShardDoc {
     }
 }
 
-impl std::cmp::PartialEq for ShardDoc {
-    fn eq(&self, other: &Self) -> bool {
-        self.timestamp == other.timestamp
-    }
-}
-
-impl std::cmp::PartialOrd for ShardDoc {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(&other))
-    }
-
-    fn ge(&self, other: &Self) -> bool {
-        true
-    }
-
-    fn le(&self, other: &Self) -> bool {
-        true
-    }
-
-    fn lt(&self, other: &Self) -> bool {
-        true
-    }
-}
-
-impl std::cmp::Eq for ShardDoc {}
-
-impl std::cmp::Ord for ShardDoc {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.timestamp.cmp(&other.timestamp)
-    }
-}
-
 #[derive(Serialize)]
 pub struct ShardData {
     number: u16,
