@@ -1,8 +1,9 @@
 use super::Receive;
 use crate::client::{Auth, ElasticsearchBuilder, Host};
-use crate::data::IndicesStats;
+use crate::data::ElasticsearchApi;
 use color_eyre::eyre::Result;
-use elasticsearch::{http, indices::IndicesStatsParts, params::Level, Elasticsearch};
+use elasticsearch::{http, Elasticsearch};
+use serde::de::DeserializeOwned;
 use url::Url;
 
 pub struct ElasticsearchReceiver {
@@ -58,22 +59,29 @@ impl Receive for ElasticsearchReceiver {
         }
     }
 
-    async fn read_indices_stats(&self) -> Result<IndicesStats> {
-        // '_all' is a wildcard to get stats for all indices
-        let index_list = vec!["_all"];
-        let indices_stats = self
+    async fn get<T>(&self) -> Result<T>
+    where
+        T: ElasticsearchApi + DeserializeOwned,
+    {
+        // Get the API URL path for the provided type
+        let path = T::url_path();
+        log::debug!("Getting API: {}", &path);
+
+        // Send a simple GET request to the API path
+        let response = self
             .client
-            .indices()
-            .stats(IndicesStatsParts::Index(&index_list))
-            .level(Level::Shards)
-            .send()
+            .send(
+                http::Method::Get,
+                &path,
+                http::headers::HeaderMap::new(),
+                Option::<&String>::None,
+                Option::<&String>::None,
+                None,
+            )
             .await?;
 
-        // turbo-fish to use serde to parse the JSON response
-        indices_stats
-            .json::<IndicesStats>()
-            .await
-            .map_err(Into::into)
+        // turbo-fish serde deserialization of the JSON response
+        response.json::<T>().await.map_err(Into::into)
     }
 }
 
